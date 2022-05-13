@@ -1,2 +1,13 @@
 
 .DS_Store
+.Rproj.user/*
+*.aux
+*.log
+*.nav
+*.out
+*.snm
+*.toc
+*.synctex.gz
+.Rproj.user
+code/
+.Rhistory
