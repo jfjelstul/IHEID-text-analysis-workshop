@@ -2,7 +2,7 @@
 
 **By Joshua C. Fjelstul, Ph.D.**
 
-This workshop will provide an introduction to quantitative text analysis for legal research. First, we'll do a broad overview of text analysis methods and how they can be used to study international law. We'll do a survey of text analysis methods, identify the differences between supervised and unsupervised learning, and discuss how quantitative text analysis overlaps with machine learning (ML) and natural language processing (NLP). We'll talk about types of descriptive analysis, like frequency analysis and document similarity, and inferential analysis, like scaling and classification. 
+This workshop will provide an introduction to quantitative text analysis for legal research. First, we'll do a broad overview of text analysis methods and how they can be used to study international law. We'll do a survey of text analysis methods, identify the differences between supervised and unsupervised learning, and discuss how quantitative text analysis overlaps with statistics, machine learning (ML), and natural language processing (NLP). We'll talk about types of descriptive analysis, like frequency analysis and document similarity, and inferential analysis, like scaling and classification. 
 
 Second, we'll learn some introductory text analysis methods for scaling and classifying legal documents, focusing on the intuition behind the methods and how to interpret the results. We'll cover unsupervised topic models for document classification (Latent Dirichlet allocation) and unsupervised methods for document scaling (Wordfish).
 
