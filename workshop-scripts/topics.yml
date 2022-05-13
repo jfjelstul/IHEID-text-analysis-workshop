@@ -1,0 +1,5 @@
+economy: [common, market, measure, equivalent, effect, bank, financ*]
+social: [person, social, work, worker, free, freedom, movement, employ*, insur, famil*, pension, child*]
+tax: [tax*, pay*, vat, deduct]
+ip: [euipo, trade, mark, patent, propert*]
+competition: [compan*, compet*, consum, aid, state]
