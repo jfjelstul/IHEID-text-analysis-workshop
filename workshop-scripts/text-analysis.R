@@ -174,10 +174,15 @@ terms(topic_model_2, n = 20)
 # Estimate a model with 10 categories
 topic_model_10 <- textmodel_lda(dfm_trimmed, k = 10)
 save(topic_model_10, file = "models/topic_model_10.RData")
-load("models/topic_model_2.RData")
+load("models/topic_model_10.RData")
 
 # See the top 20 tokens that define each topic
 terms(topic_model_10, n = 20)
+
+length(topic_model_10$alpha)
+length(topic_model_10$beta)
+dim(topic_model_10$phi)
+dim(topic_model_10$theta)
 
 # Estimate a seeded model
 dictionary <- dictionary(file = "code/topics.yml")
