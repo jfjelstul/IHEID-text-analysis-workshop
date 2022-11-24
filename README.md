@@ -1,4 +1,4 @@
-# Social Science Methods for Lawyers: Quantitative Text Analysis
+# Social Science Methods for Legal Scholars: Quantitative Text Analysis
 
 **By Joshua C. Fjelstul, Ph.D.**
 
