@@ -1,17 +1,17 @@
-# The Graduate Institute of International and Development Studies
-# Social Science Methods for Lawyers
-# Quantitative Text Analysis Workshop
+# European Society of International Law (ESIL)
+# Graduate Institute of International and Development Studies (IHEID)
+# Social Science Methods for Legal Scholars
+# Quantitative Text Analysis
 # Joshua C. Fjelstul, Ph.D.
 
 # Install packages
-install.packages("tidyverse")
-install.packages("lubridate")
-install.packages("ggplot2")
-install.packages("patchwork")
-devtools::install_github("jfjelstul/ggminimal")
-devtools::install_github("jfjelstul/quanteda")
-devtools::install_github("jfjelstul/quanteda.textstats")
-devtools::install_github("jfjelstul/quanteda.textmodels")
+# install.packages("tidyverse")
+# install.packages("lubridate")
+# install.packages("patchwork")
+# install.packages("quanteda")
+# install.packages("quanteda.textstats")
+# install.packages("quanteda.textmodels")
+# devtools::install_github("jfjelstul/ggminimal")
 
 # Load packages
 library(tidyverse)
@@ -32,12 +32,12 @@ load("data/text_corpus.RData")
 
 # Code the judge-rapporteur ----------------------------------------------------
 
-# Let's try with a simple regular expression first
+# Let's try a simple regular expression first
 judge_rapporteurs <- text_corpus |>
   filter(str_detect(text, "^composed of")) |>
   mutate(
     judge_rapporteur = text |>
-      str_extract("[A-Z]\\. [[:alpha:]]+ \\(Rapporteur?\\)") |>
+      str_extract("[A-Z]\\. [[:alpha:]]+ \\(Rapporteur\\)") |>
       str_remove("\\([Rr]apporteur\\)") |>
       str_remove("^[A-Z]\\.") |>
       str_squish()
@@ -74,21 +74,23 @@ unique(judge_rapporteurs$judge_rapporteur)
 
 # Prepare the text for analysis ------------------------------------------------
 
+# Clean the text
 text_corpus <- text_corpus |>
   mutate(
     clean_text = text |>
       str_to_lower() |>
       str_replace_all("[[:punct:]]+", " ") |>
       str_replace_all("[[:digit:]]+", " ") |>
-      str_squish(),
-    paragraph_id
+      str_squish()
   )
 
 # Collapse by judgment
 text_corpus <- text_corpus |>
   group_by(ecli, decision_date) |>
   summarize(
-    text = str_c(clean_text, collapse = " ")
+    text = str_c(clean_text, collapse = " "),
+    text = text |>
+      stringr::str_squish()
   )
 
 # Now we can merge in the judge-rapporteurs based on the ECLI number
@@ -159,8 +161,6 @@ dfm_trimmed <- dfm |>
 # Check the dimensions again
 dim(dfm_trimmed)
 
-head(dfm_trimmed)
-
 # Topic model ------------------------------------------------------------------
 
 # Estimate a model with 2 categories
@@ -179,11 +179,6 @@ load("models/topic_model_10.RData")
 # See the top 20 tokens that define each topic
 terms(topic_model_10, n = 20)
 
-length(topic_model_10$alpha)
-length(topic_model_10$beta)
-dim(topic_model_10$phi)
-dim(topic_model_10$theta)
-
 # Estimate a seeded model
 dictionary <- dictionary(file = "code/topics.yml")
 seeded_topic_model <- textmodel_seededlda(dfm_trimmed, dictionary, residual = TRUE)
@@ -191,9 +186,9 @@ save(seeded_topic_model, file = "models/seeded_topic_model.RData")
 load("models/seeded_topic_model.RData")
 
 # See the top 20 tokens that define each topic
-terms(seeded_topic_model, n = 20)
+terms(seeded_topic_model, n = 40)
 
-# Interpret estimates ----------------------------------------------------------
+## Interpret estimates ---------------------------------------------------------
 
 # Make a tibble with estimates
 topic_estimates <- seeded_topic_model$theta |>
@@ -219,7 +214,7 @@ topic_estimates <- seeded_topic_model$theta |>
 
 # Plot average positions by judge-rapporteur for the taxation topic
 panel_1 <- ggplot(topic_estimates, aes(x = tax, y = fct_reorder(judge_rapporteur, tax), size = count)) +
-  geom_point() +
+  geom_point(color = "#3498db") +
   scale_size_continuous(range = c(1, 4), guide = "none") +
   ggtitle("Taxation topic") +
   ylab(NULL) +
@@ -228,7 +223,7 @@ panel_1 <- ggplot(topic_estimates, aes(x = tax, y = fct_reorder(judge_rapporteur
 
 # Plot average positions by judge-rapporteur for the intellectual property topic
 panel_2 <- ggplot(topic_estimates, aes(x = ip, y = fct_reorder(judge_rapporteur, ip), size = count)) +
-  geom_point() +
+  geom_point(color = "#3498db") +
   scale_size_continuous(range = c(1, 4), name = "Number of judgments") +
   ggtitle("Intellectual property topic") +
   ylab(NULL) +
@@ -249,12 +244,12 @@ save(wordfish_model, file = "models/wordfish_model.RData")
 load("models/wordfish_model.RData")
 
 # There are 4 parameters
-# theta = estimated document positions (this is mainly what we're interested in)
+# theta = estimated document positions
 # beta = estimated word positions
 # alpha = estimated document fixed effect (some documents are just longer than others)
 # psi = estimated word fixed effect (some words are just more common)
 
-# Interpret word estimates -----------------------------------------------------
+## Interpret word estimates ----------------------------------------------------
 
 # List of procedure-oriented words
 procedural_words <- c(
@@ -271,8 +266,8 @@ policy_words <- c(
 # Make a tibble with the word parameters
 word_estimates <- tibble(
   word = colnames(dfm_trimmed),
-  position = wordfish_mod$beta,
-  fixed_effect = wordfish_mod$psi,
+  position = wordfish_model$beta,
+  fixed_effect = wordfish_model$psi,
 )
 
 # Word type
@@ -283,7 +278,10 @@ word_estimates <- word_estimates |>
       word %in% policy_words ~ "Policy word",
       TRUE ~ "Other"
     ),
-    word_type = factor(word_type, levels = c("Policy word", "Procedural word", "Other"))
+    word_type = factor(
+      word_type,
+      levels = c("Policy word", "Procedural word", "Other")
+    )
   )
 
 # We can graph these to interpret the latent dimension
@@ -298,20 +296,18 @@ plot <- ggplot(word_estimates, aes(x = position, y = fixed_effect, label = word,
   ylab("Fixed effect") +
   xlab("Word position") +
   theme_minimal()
-plot
 
 # Save plot
 ggsave(plot, filename = "plots/word_positions.png", device = "png", width = 10, height = 10, scale = 1)
 
-# Interpret document estimates -------------------------------------------------
+## Interpret document estimates ------------------------------------------------
 
-# Add estimates to text corpus
-document_estimates <- text_corpus |>
-  mutate(
-    document = text_corpus$theta,
-    judge_rapporteur = text_corpus$judge_rapporteur,
-    position = wordfish_mod$theta
-  )
+# Create a table of document estimates
+document_estimates <- tibble(
+  document = wordfish_model$ecli,
+  judge_rapporteur = text_corpus$judge_rapporteur,
+  position = wordfish_model$theta
+)
 
 # Collapse by judge
 judge_estimates <- document_estimates |>
@@ -325,19 +321,20 @@ judge_estimates <- document_estimates |>
     judge_rapporteur = judge_rapporteur |>
       factor() |>
       fct_reorder(position)
+  ) |>
+  filter(
+    count >= 10
   )
 
 # Plot average positions by judge-rapporteur
-plot <- ggplot(judge_estimates, aes(x = position, y = judge_rapporteur, size = count, color = position)) +
-  geom_point() +
+plot <- ggplot(judge_estimates, aes(x = position, y = judge_rapporteur, size = count)) +
+  geom_point(color = "#3498db") +
   geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") +
   scale_size_continuous(range = c(1, 4), name = "Number of judgments") +
-  scale_color_gradient(low = "#3498db", high = "#2ecc71", guide = "none") +
   ggtitle("Wordfish estimates for the positions CJEU judges (2019-2021)") +
   ylab(NULL) +
   xlab("Average judge-rapporteur position") +
   theme_minimal()
-plot
 
 # Save plot
 ggsave(plot, filename = "plots/judge_positions.png", device = "png", width = 10, height = 10, scale = 1)
