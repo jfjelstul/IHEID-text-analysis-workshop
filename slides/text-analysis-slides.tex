@@ -52,7 +52,7 @@
 
 \definecolor{gray}{gray}{0.8}
 
-\title[IHEID Text Analysis Workshop]{Social Science Methods for Lawyers: Text Analysis \\[0.5em] A Survey of Text Analysis Methods}
+\title[ESIL/IHEID Text Analysis Workshop]{Social Science Methods for Legal Scholars \\[0.5em] A Survey of Quantitative Text Analysis Methods}
 \author[Joshua C. Fjelstul, Ph.D.]{Joshua C. Fjelstul, Ph.D.}
 \institute{Post-Doctoral Research Fellow, University of Geneva \\[0.5em] Researcher, ARENA Centre for European Studies, University of Oslo}
 \date{}
@@ -92,13 +92,13 @@
 \begin{frame}{Assumptions}
 \begin{itemize}
 \item The content of text reveals something meaningful and interesting about the author that we can use to answer research questions \\[1em]
-\item Text can be represented by features (words, lemmas, $n$-grams) \\[1em]
+\item Text can be represented by features/tokens (words, lemmas, $n$-grams) \\[1em]
 \item The relative distribution of words in documents captures meaningful variation in topics and substantively important latent dimensions \\[0.5em]
 \begin{itemize}
 \item We make a matrix called a document feature matrix (DFM) with words in columns, documents in rows, and frequencies in cells that describe these distributions \\[1em]
 \item This might seem unsatisfactory \\[1em]
 \item Some kinds of neural networks can take into account word order \\[1em]
-\item Taking into account word order adds a lot of complexity but doesn't usually change things much
+\item Taking into account word order adds a lot of complexity and the "bag-of-words" approach usually works well
 \end{itemize}
 \end{itemize}
 \end{frame}
@@ -108,17 +108,22 @@
 \item Frequency analysis\\[0.5em]
 \begin{itemize}
 \item What words/tokens are important? \\[0.5em]
-\item Descriptive \\[1em]
+\item Descriptive \\[2em]
 \end{itemize}
 \item Similarity\\[0.5em]
 \begin{itemize}
 \item How similar are documents/paragraphs/sentences?  \\[0.5em]
 \item Descriptive  \\[1em]
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Types of quantitative text analysis}
+\begin{itemize}
 \item Scaling\\[0.5em]
 \begin{itemize}
 \item How do documents/paragraphs/sentences compare on a continuous latent dimension?  \\[0.5em]
-\item Inferential (statistical models, machine learning models)  \\[1em]
+\item Inferential (statistical models, machine learning models)  \\[2em]
 \end{itemize}
 \item Classification\\[0.5em]
 \begin{itemize}
@@ -130,7 +135,7 @@
 
 \begin{frame}{Natural language processing (NLP)}
 \begin{itemize}
-\item Text analysis overlaps with NLP — using computers to process and analyze language \\[0.5em]
+\item Text analysis overlaps with NLP — using computers to analyze language \\[0.5em]
 \begin{itemize}
 \item Language processing \\[0.5em]
 \begin{itemize}
@@ -194,6 +199,11 @@
 \item You have to know ahead of time what the relevant topics/dimensions are \\[1em]
 \end{itemize}
 \end{itemize}
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Learning}
+\begin{itemize}
 \item Unsupervised learning \\[0.5em]
 \begin{itemize}
 \item Advantages \\[0.5em]
@@ -214,8 +224,8 @@
 \begin{frame}{Parametric vs non-parametric models}
 \begin{itemize}
 \item Scaling and classification models can be parametric or non-parametric \\[2em]
-\item Parametric models overlap with statistics and involve estimating the values of parameters that you can interpret to learn about the content of documents \\[2em]
-\item Non-parametric methods overlap with machine learning and depend on complex algorithms to learn the relationship between text data and labels
+\item Parametric models overlap with statistics and involve estimating the values of parameters in statistical models that you can interpret to learn about the content of documents \\[2em]
+\item Non-parametric methods overlap with machine learning and depend on algorithms to learn the relationship between text data and labels
 \end{itemize}
 \end{frame}
 
@@ -226,13 +236,12 @@
 \item Naive Bayes classifier (non-parametric) \\[0.5em]
 \item Regression classifiers (parametric) \\[0.5em]
 \item Random forests (non-parametric) \\[0.5em]
-\item Neural networks (non-parametric) \\[0.5em]
-\item Support vector machines (SVM) (non-parametric) \\[2em]
+\item Neural networks (non-parametric) \\[2em]
 \end{itemize}
 \item Unsupervised methods for text \\[0.5em]
 \begin{itemize}
 \item Latent Dirichlet allocation (LDA) (parametric) \\[0.5em]
-\item Seeded LDA  (parametric) \\[0.5em]
+\item Seeded LDA  (semi-parametric) \\[0.5em]
 \item Structural topic models (STM) (parametric)
 \end{itemize} 
 \end{itemize}
@@ -242,7 +251,7 @@
 \begin{itemize}
 \item Supervised \\[0.5em]
 \begin{itemize}
-\item Wordscores \\[3em]
+\item Wordscores (parametric) \\[3em]
 \end{itemize}
 \item Unsupervised \\[0.5em]
 \begin{itemize}
@@ -266,13 +275,13 @@
 
 \begin{frame}{Topic models}
 \begin{itemize}
+\item The model estimates the probability that each topic applies to each document \\[1em]
 \item You have to tell the model how many topics to find \\[1em]
 \item You can look at the words that are most strongly associated with each topic \\[1em]
 \item Based on that list of words, we can label each topic \\[1em]
 \item Some topics will be more distinct that others \\[1em]
 \item If topics overlap too much, we may need fewer topics \\[1em]
-\item It topics are not distinct, we may need more topics \\[1em]
-\item The model estimates the probability that each topic applies to each document
+\item It topics are not distinct, we may need more topics
 \end{itemize}
 \end{frame}
 
@@ -321,7 +330,7 @@
 \begin{itemize}
 \item The model equation is:
 \begin{align*}
-log \lambda_{ij} = \alpha_i + \theta_i \beta_j + \phi_j
+log \lambda_{ij} = \alpha_i + \theta_i \beta_j + \phi_j \\[0.5em]
 \end{align*}
 \item Parameters: \\[0.5em]
 \begin{itemize}
@@ -329,11 +338,10 @@ log \lambda_{ij} = \alpha_i + \theta_i \beta_j + \phi_j
 \item $i$ indexes documents \\[0.5em]
 \item $j$ indexes words \\[0.5em]
 \item $\theta_i$ is the latent position of document $i$ that we want to estimate \\[0.5em]
-\item $\beta_j$ is the latent position of word $j$ (the strong of the relationship between the latent dimension and the frequency) \\[0.5em]
+\item $\beta_j$ is the latent position of word $j$ (strength of the relationship between the latent dimension and the frequency of the word) \\[0.5em]
 \item $\alpha_i$ is a document fixed effect (controls for how long each document is) \\[0.5em]
-\item $\phi_j$ is a word fixed effect (controls for how common/rare each word is) \\[1em]
+\item $\phi_j$ is a word fixed effect (controls for how frequent each word is) \\[1em]
 \end{itemize}
-\item We can estimate standard errors and construct confidence intervals for each parameter to express uncertainty, just like with a regression model
 \end{itemize}
 \end{frame}
 
