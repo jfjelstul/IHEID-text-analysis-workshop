@@ -32,6 +32,12 @@ library(ggminimal)
 # and 12 December, 2021
 load("data/text_corpus.RData")
 
+# Select variables
+text_corpus <- text_corpus |>
+  select(
+    ecli, text
+  )
+
 # This is "tidy" data:
 # 1. Each variable is a column
 # 2. Each observation is a row
@@ -95,7 +101,7 @@ text_corpus <- text_corpus |>
 # Create a "tidy" text corpus
 tidy_text_corpus <- text_corpus |>
   group_by(
-    ecli, paragraph_id, judge_rapporteur
+    ecli, judge_rapporteur
   ) |>
   unnest_tokens(
     output = "word",
@@ -104,7 +110,7 @@ tidy_text_corpus <- text_corpus |>
     to_lower = TRUE
   )
 
-# Remove stop words, short words, and numbers
+# Remove stop words, short words, numbers, and words with punctuation
 tidy_text_corpus <- tidy_text_corpus |>
   anti_join(
     get_stopwords(),
@@ -212,7 +218,6 @@ plot <- tidy_text_corpus |>
     y = "Frequency"
   ) +
   theme_minimal()
-# This is a broken power law
 
 # Document feature matrix ------------------------------------------------------
 
@@ -226,6 +231,9 @@ dfm <- tidy_text_corpus |>
     term = word,
     value = count
   )
+
+# Check the dimensions
+dim(dfm)
 
 # Trim the DF
 dfm_trimmed <- dfm |>
@@ -242,7 +250,7 @@ save(topic_model_2, file = "models/topic_model_2.RData")
 load("models/topic_model_2.RData")
 
 # See the top 20 tokens that define each topic
-terms(topic_model_2, n = 20)
+terms(topic_model_2, n = 50)
 
 # Estimate a model with 10 categories
 topic_model_10 <- textmodel_lda(dfm_trimmed, k = 10)
