@@ -241,7 +241,7 @@
 \item Unsupervised methods for text \\[0.5em]
 \begin{itemize}
 \item Latent Dirichlet allocation (LDA) (parametric) \\[0.5em]
-\item Seeded LDA  (semi-parametric) \\[0.5em]
+\item Seeded LDA  (parametric) \\[0.5em]
 \item Structural topic models (STM) (parametric)
 \end{itemize} 
 \end{itemize}
@@ -374,6 +374,24 @@ log \lambda_{ij} = \alpha_i + \theta_i \beta_j + \phi_j \\[0.5em]
 \end{itemize}
 \end{frame}
 
+\begin{frame}{Research questions}
+\begin{itemize}
+\item We'll answer two research questions about the content of judgments delivered by the Court of Justice of the European Union (CJEU) \\[0.5em]
+\begin{itemize}
+\item To what extent do judges specialize in certain areas of law? \\[1em]
+\item What is the primary latent dimension in CJEU judgments? Is it a left/right dimension? Is it a pro-/anti-European integration dimension? Or is it something else, like a policy/procedure dimension? \\[3em]
+\end{itemize}
+\item We'll use unsupervised and semi-supervised topic models to address the first question and an unsupervised scaling model to address the second question
+\end{itemize}
+\end{frame}
+
+\begin{frame}{Seeded LDA model}
+\begin{figure}
+\centering
+\includegraphics[width = 4.5in]{judge_topics}
+\end{figure}
+\end{frame}
+
 \begin{frame}{Wordfish (word positions)}
 \begin{figure}
 \centering
@@ -386,17 +404,6 @@ log \lambda_{ij} = \alpha_i + \theta_i \beta_j + \phi_j \\[0.5em]
 \centering
 \includegraphics[width = 3in]{judge_positions}
 \end{figure}
-\end{frame}
-
-\begin{frame}{Research questions}
-\begin{itemize}
-\item We'll answer two research questions about the content of judgments delivered by the Court of Justice of the European Union (CJEU) \\[0.5em]
-\begin{itemize}
-\item To what extent do judges specialize in certain areas of law? \\[1em]
-\item What is the primary latent dimension in CJEU judgments? Is it a left/right dimension? Is it a pro-/anti-European integration dimension? Or is it something else, like a policy/procedure dimension? \\[3em]
-\end{itemize}
-\item We'll use unsupervised and semi-supervised topic models to address the first question and an unsupervised scaling model to address the second question
-\end{itemize}
 \end{frame}
 
 \end{document}
