@@ -8,6 +8,7 @@
 # install.packages("tidyverse")
 # install.packages("lubridate")
 # install.packages("patchwork")
+# install.packages("tidytext")
 # install.packages("quanteda")
 # install.packages("quanteda.textstats")
 # install.packages("quanteda.textmodels")
@@ -16,12 +17,12 @@
 # Load packages
 library(tidyverse)
 library(lubridate)
+library(patchwork)
+library(tidytext)
 library(quanteda)
 library(quanteda.textstats)
 library(quanteda.textmodels)
 library(seededlda)
-library(ggplot2)
-library(patchwork)
 library(ggminimal)
 
 # Read in data -----------------------------------------------------------------
@@ -29,6 +30,11 @@ library(ggminimal)
 # All judgments delivered by the Court of Justice between 1 January, 2019
 # and 12 December, 2021
 load("data/text_corpus.RData")
+
+# This is "tidy" data:
+# 1. Each variable is a column
+# 2. Each observation is a row
+# 3. Each unit of observation is a table
 
 # Code the judge-rapporteur ----------------------------------------------------
 
@@ -72,93 +78,159 @@ table(is.na(judge_rapporteurs$judge_rapporteur))
 # Check values to make sure the names are clean
 unique(judge_rapporteurs$judge_rapporteur)
 
+# Now we can merge in the judge-rapporteurs based on the ECLI number
+text_corpus <- text_corpus |>
+  left_join(
+    judge_rapporteurs |>
+      select(ecli, judge_rapporteur),
+    by = "ecli"
+  ) |>
+  filter(
+    !is.na(judge_rapporteur)
+  )
+
 # Prepare the text for analysis ------------------------------------------------
 
-# Clean the text
-text_corpus <- text_corpus |>
+# Create a "tidy" text corpus
+tidy_text_corpus <- text_corpus |>
+  group_by(
+    ecli, paragraph_id, judge_rapporteur
+  ) |>
+  unnest_tokens(
+    output = "word",
+    input = text,
+    token = "words",
+    to_lower = TRUE
+  )
+
+# Remove stop words, short words, and numbers
+tidy_text_corpus <- tidy_text_corpus |>
+  anti_join(
+    get_stopwords(),
+    by = "word"
+  ) |>
+  filter(
+    !str_detect(word, "[0-9]")
+  ) |>
+  filter(
+    str_length(word) >= 3
+  ) |>
+  filter(
+    !str_detect(word, "[[:punct:]]")
+  )
+
+# Make a list of procedural words to remove
+to_remove <- tibble(
+  word = c(
+    "article", "court", "paragraph", "judgment", "case",
+    "proceedings", "apeal", "application",
+    "directive", "regulation", "law",
+    "member", "state", "states", "commission", "european", "union"
+  )
+)
+
+# Remove words
+tidy_text_corpus <- tidy_text_corpus |>
+  anti_join(
+    to_remove,
+    by = "word"
+  )
+
+# Frequency analysis -----------------------------------------------------------
+
+# Identify the most common words
+counts <- tidy_text_corpus |>
+  group_by(word) |>
+  summarize(count = n()) |>
+  arrange(desc(count))
+
+# Plot most frequent words
+plot <- tidy_text_corpus |>
+  group_by(word) |>
+  summarize(count = n()) |>
+  arrange(desc(count)) |>
+  slice_head(n = 25) |>
   mutate(
-    clean_text = text |>
-      str_to_lower() |>
-      str_replace_all("[[:punct:]]+", " ") |>
-      str_replace_all("[[:digit:]]+", " ") |>
-      str_squish()
-  )
+    word = word |>
+      factor() |>
+      fct_reorder(count)
+  ) |>
+  ggplot() +
+  geom_bar(aes(x = word, y = count), stat = "identity", color = "black", fill = "gray90", width = 0.7) +
+  scale_y_continuous(breaks = seq(0, 30000, 5000), expand = expansion(mult = c(0, 0.1))) +
+  coord_flip() +
+  labs(
+    title = "Most frequent words in CJEU judgments (2019-2021)",
+    x = NULL,
+    y = "Frequency"
+  ) +
+  theme_minimal()
 
-# Collapse by judgment
-text_corpus <- text_corpus |>
-  group_by(ecli, decision_date) |>
-  summarize(
-    text = str_c(clean_text, collapse = " "),
-    text = text |>
-      stringr::str_squish()
-  )
+# Plot most frequent words
+plot <- tidy_text_corpus |>
+  group_by(word) |>
+  summarize(count = n()) |>
+  arrange(desc(count)) |>
+  slice_head(n = 25) |>
+  mutate(
+    word = word |>
+      factor() |>
+      fct_reorder(count)
+  ) |>
+  ggplot() +
+  geom_segment(aes(x = word, xend = word, y = 0, yend = count), color = "gray90") +
+  geom_point(aes(x = word, y = count), size = 3, color = "#3498db") +
+  scale_y_continuous(breaks = seq(0, 30000, 5000), expand = expansion(mult = c(0, 0.1))) +
+  coord_flip() +
+  labs(
+    title = "Most frequent words in CJEU judgments",
+    x = NULL,
+    y = "Frequency"
+  ) +
+  theme_minimal()
 
-# Now we can merge in the judge-rapporteurs based on the ECLI number
-text_corpus <- left_join(
-  text_corpus,
-  judge_rapporteurs |>
-    select(ecli, judge_rapporteur),
-  by = "ecli"
-)
-
-# We'll drop the judgments where the judge-rapporteur is missing
-text_corpus <- text_corpus |>
-  filter(!is.na(judge_rapporteur))
-
-# Create a corpus object
-corpus <- corpus(
-  text_corpus$text,
-  docnames = text_corpus$ecli,
-  docvars = text_corpus |>
-    select(decision_date, judge_rapporteur)
-)
+# Plot frequency by rank
+# Zipf's law: A word's frequency is inversely proporational to its rank.
+# The word at rank n appears 1/n times as often as the most frequent one.
+plot <- tidy_text_corpus |>
+  group_by(word) |>
+  summarize(count = n()) |>
+  arrange(desc(count)) |>
+  ungroup() |>
+  mutate(
+    rank = row_number(),
+    frequency = count / sum(count)
+  ) |>
+  ggplot() +
+  geom_line(aes(x = rank, y = frequency), size = 1, color = "#3498db") +
+  scale_x_log10() +
+  scale_y_log10() +
+  labs(
+    title = "Zipf's law for CJEU judgments",
+    x = "Rank",
+    y = "Frequency"
+  ) +
+  theme_minimal()
+# This is a broken power law
 
 # Document feature matrix ------------------------------------------------------
 
 # Create a DFM
-dfm <- corpus |>
-  tokens() |> # Create tokens
-  tokens_wordstem() |> # Stem words
-  tokens_remove(stopwords("english")) |> # Remove stop words
-  dfm()
+dfm <- tidy_text_corpus |>
+  group_by(word, ecli) |>
+  summarize(count = n()) |>
+  arrange(desc(count)) |>
+  cast_dfm(
+    document = ecli,
+    term = word,
+    value = count
+  )
 
-# Let's check to see what the default stop words are
-stopwords("english")
-
-# Check the dimensions
-dim(dfm)
-# There are 1244 documents
-# There are 28886 unique tokens
-
-# Let's take a look at the first 100 tokens to make sure the
-# lemmatization worked as expected
-head(colnames(dfm), n = 100)
-
-# We could also use ngrams
-dfm_2 <- corpus |>
-  tokens() |> # Create tokens
-  tokens_ngrams(2) |> # Create bi-grams
-  tokens_wordstem() |> # Stem words
-  tokens_remove(stopwords("english")) |> # Remove stop words
-  dfm()
-
-# Check the dimensions again
-dim(dfm_2)
-# Now we have 493276 tokens
-
-# Let's see what they look like
-head(colnames(dfm_2), n = 100)
-
-# We'll just use words (for computational efficiency)
-rm(dfm_2)
-
-# We don't usually want to keep all of the words
-# We can "trim" the DFM by dropping really infrequent words
-# We'll keep words that occur at least 50 times
+# Trim the DF
 dfm_trimmed <- dfm |>
   dfm_trim(min_termfreq = 500)
 
-# Check the dimensions again
+# Check the dimensions
 dim(dfm_trimmed)
 
 # Topic model ------------------------------------------------------------------
@@ -180,7 +252,7 @@ load("models/topic_model_10.RData")
 terms(topic_model_10, n = 20)
 
 # Estimate a seeded model
-dictionary <- dictionary(file = "code/topics.yml")
+dictionary <- dictionary(file = "workshop-scripts/topics.yml")
 seeded_topic_model <- textmodel_seededlda(dfm_trimmed, dictionary, residual = TRUE)
 save(seeded_topic_model, file = "models/seeded_topic_model.RData")
 load("models/seeded_topic_model.RData")
@@ -194,8 +266,14 @@ terms(seeded_topic_model, n = 40)
 topic_estimates <- seeded_topic_model$theta |>
   as_tibble() |>
   mutate(
-    ecli = text_corpus$ecli,
-    judge_rapporteur = text_corpus$judge_rapporteur
+    ecli = rownames(dfm_trimmed),
+  ) |>
+  left_join(
+    judge_rapporteurs |>
+      select(
+        ecli, judge_rapporteur
+      ),
+    by = "ecli"
   ) |>
   group_by(judge_rapporteur) |>
   summarize(
@@ -210,6 +288,9 @@ topic_estimates <- seeded_topic_model$theta |>
   mutate(
     judge_rapporteur = judge_rapporteur |>
       factor()
+  ) |>
+  filter(
+    count >= 10
   )
 
 # Plot average positions by judge-rapporteur for the taxation topic
@@ -253,14 +334,16 @@ load("models/wordfish_model.RData")
 
 # List of procedure-oriented words
 procedural_words <- c(
-  "appeal", "appel", "plead", "unsuccess", "error", "plea", "unfound",
-  "distort", "ineffect", "annulment", "infring"
+  "appeal", "appellant", "unsuccessful", "error", "plea", "pleas", "unfounded",
+  "erred", "annulment", "infringement", "arguments", "alleging"
 )
 
 # List of policy-oriented words
 policy_words <- c(
-  "worker", "social", "pension", "taxat", "incom", "credit", "employ",
-  "contract", "person", "work", "tax", "servic"
+  "worker", "workers", "social", "pension", "taxation", "income", "credit",
+  "employ", "contract", "person", "work", "tax", "service", "insurance",
+  "consumer", "employee", "citizen", "passenger", "passengers", "loan",
+  "family", "child", "residence"
 )
 
 # Make a tibble with the word parameters
@@ -286,11 +369,11 @@ word_estimates <- word_estimates |>
 
 # We can graph these to interpret the latent dimension
 plot <- ggplot(word_estimates, aes(x = position, y = fixed_effect, label = word, color = word_type, size = word_type)) +
-  geom_text() +
+  geom_text(alpha = 0.7) +
   geom_vline(xintercept = 0, size = 0.5, linetype = "dashed") +
-  scale_x_continuous(limits = c(-4, 4), breaks = seq(-4, 4, 1)) +
-  scale_y_continuous(limits = c(-4, 4), breaks = seq(-4, 4, 1)) +
-  scale_color_manual(values = c("#3498db", "#2ecc71", "gray70"), name = NULL) +
+  scale_x_continuous(limits = c(-3, 3), breaks = seq(-3, 3, 1)) +
+  scale_y_continuous(limits = c(-3, 3), breaks = seq(-3, 3, 1)) +
+  scale_color_manual(values = c("#3498db", "#2ecc71", "gray80"), name = NULL) +
   scale_size_manual(values = c(4, 4, 2.5), guide = "none") +
   ggtitle("Wordfish estimates for the positions of words in CJEU judgments (2019-2021)") +
   ylab("Fixed effect") +
@@ -304,10 +387,19 @@ ggsave(plot, filename = "plots/word_positions.png", device = "png", width = 10, 
 
 # Create a table of document estimates
 document_estimates <- tibble(
-  document = wordfish_model$ecli,
-  judge_rapporteur = text_corpus$judge_rapporteur,
+  ecli = wordfish_model$docs,
   position = wordfish_model$theta
 )
+
+# Merge in judge rapporteur
+document_estimates <- document_estimates |>
+  left_join(
+    judge_rapporteurs |>
+      select(
+        ecli, judge_rapporteur
+      ),
+    by = "ecli"
+  )
 
 # Collapse by judge
 judge_estimates <- document_estimates |>
