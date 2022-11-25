@@ -12,6 +12,7 @@
 # install.packages("quanteda")
 # install.packages("quanteda.textstats")
 # install.packages("quanteda.textmodels")
+# install.packages("seededlda")
 # devtools::install_github("jfjelstul/ggminimal")
 
 # Load packages
